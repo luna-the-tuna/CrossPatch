@@ -141,7 +141,7 @@ class ModCard(QFrame):
     def _load_image(self):
         preview_media = self.mod_data.get('_aPreviewMedia', {})
         images = preview_media.get('_aImages', [])
-        
+
         if not images:
             # If image data is missing, it's likely from a minimal API response.
             # Fetch the full details for this mod in the background.
@@ -255,7 +255,7 @@ class CrossPatchWindow(QMainWindow):
         self.instance_socket = instance_socket
 
         # --- Core App Data ---
-        self.cfg = Config.config
+        self.cfg = Config.load_config()
         self.profile_manager = ProfileManager(self.cfg)
         self.updatable_mods = {}
         self.active_download_manager = None # To hold a reference
@@ -269,7 +269,7 @@ class CrossPatchWindow(QMainWindow):
         # --- Window Setup ---
         self.setWindowTitle(APP_TITLE)
         self.setWindowIcon(QIcon(os.path.join(self.assets_path, 'CrossP.ico')))
-        
+
         # Restore window size and position
         geometry = self.cfg.get("window_geometry")
         if geometry:
@@ -395,7 +395,7 @@ class CrossPatchWindow(QMainWindow):
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        
+
         self.card_container = QWidget()
         self.card_layout = QGridLayout(self.card_container)
         self.card_layout.setSpacing(10)
@@ -530,7 +530,7 @@ class CrossPatchWindow(QMainWindow):
             dialog.exec()
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Could not open ignored conflicts dialog: {e}")
-        
+
 
     def _create_bottom_bar(self):
         # --- Main Action Buttons (Refresh, Save, Add) ---
@@ -558,7 +558,7 @@ class CrossPatchWindow(QMainWindow):
         self.search_btn.setCheckable(True)
         self.search_btn.toggled.connect(self.toggle_search_bar)
         bottom_button_layout.addWidget(self.search_btn)
-        
+
         # The bottom_button_layout is already the layout for self.bottom_button_frame.
         # Adding it directly to centralWidget's layout would cause QLayout::addChildLayout warning.
         # Only add the frame itself.
@@ -582,7 +582,7 @@ class CrossPatchWindow(QMainWindow):
         status_layout.setContentsMargins(0, 0, 0, 0)
         self.status_label = QLabel(f"CrossPatch {APP_VERSION}")
         status_layout.addWidget(self.status_label, alignment=Qt.AlignCenter)
-        
+
         status_bar.addWidget(status_widget, 1)
 
     def event(self, event):
@@ -597,7 +597,7 @@ class CrossPatchWindow(QMainWindow):
         super().resizeEvent(event)
         if self._resize_timer:
             self._resize_timer.stop()
-        
+
         self._resize_timer = QTimer()
         self._resize_timer.setSingleShot(True)
         self._resize_timer.timeout.connect(self._reflow_browse_cards)
@@ -618,7 +618,7 @@ class CrossPatchWindow(QMainWindow):
         """Shows or hides mod-related buttons based on the selected tab."""
         tab_text = self.notebook.tabText(index)
         is_mods_tab = (tab_text == "Installed Mods")
-        
+
         # self.refresh_btn.setVisible(is_mods_tab)
         self.refresh_btn.setVisible(is_mods_tab)
         self.save_btn.setVisible(is_mods_tab)
@@ -673,7 +673,7 @@ class CrossPatchWindow(QMainWindow):
 
             mod_folder_name = item.data(0, Qt.UserRole)
             is_enabled = item.checkState(1) == Qt.Checked
-            
+
             # We no longer save the state immediately. Instead, we just update the
             # in-memory profile data. The change will be persisted only when the
             # user clicks "Save".
@@ -695,7 +695,7 @@ class CrossPatchWindow(QMainWindow):
         menu.addAction("Open containing folder", self.open_selected_mod_folder)
         menu.addAction("Edit mod info", self.edit_selected_mod_info)
         menu.addSeparator()
-        
+
         # Add "Configure" option if applicable
         if item.text(6) == "⚙️":
             menu.addAction("Configure mod...", self.configure_selected_mod)
@@ -768,24 +768,24 @@ class CrossPatchWindow(QMainWindow):
                 # Traverse the path components, creating folder nodes as needed
                 for i in range(len(path_parts)):
                     current_path_tuple = tuple(path_parts[:i+1])
-                    
+
                     if current_path_tuple in nodes:
                         parent_item = nodes[current_path_tuple]
                     else:
                         node_text = path_parts[i]
                         is_file = (i == len(path_parts) - 1)
-                        
+
                         # Create the new item with its name in the first column
                         new_item = QTreeWidgetItem([node_text])
                         new_item.setIcon(0, file_icon if is_file else folder_icon)
-                        
+
                         # If this is the file itself, populate the other columns
                         if is_file:
                             new_item.setText(1, str(e.get('size', '')))
                             new_item.setText(2, str(e.get('compressed_size', '')))
                             new_item.setText(3, str(e.get('offset', '')))
                             new_item.setText(4, e.get('archive', ''))
-                        
+
                         parent_item.addChild(new_item)
                         nodes[current_path_tuple] = new_item
                         parent_item = new_item
@@ -897,7 +897,7 @@ class CrossPatchWindow(QMainWindow):
             disabled_mods_with_info.sort(key=lambda x: x[0].lower())
             # The final list of mod folders to display
             display_order = enabled_mods_ordered + [mod_folder for name, mod_folder in disabled_mods_with_info]
-            
+
             # --- Tree Update ---
             self.tree.setColumnHidden(0, not self.updatable_mods)
             # Disable widget updates to reduce repaint overhead during bulk population
@@ -938,7 +938,7 @@ class CrossPatchWindow(QMainWindow):
                     font.setBold(True)
                     item.setFont(2, font)
                     item.setForeground(2, QColor("springgreen"))
-                
+
                 if has_config:
                     item.setText(6, "⚙️")
 
@@ -1020,7 +1020,7 @@ class CrossPatchWindow(QMainWindow):
             self.refresh_btn.setEnabled(True)
             self.status_label.setText(f"CrossPatch {APP_VERSION}")
             print("Mod processing and UI update finished.")
-            
+
             if not is_launch_operation: # Only do this if it's not a launch
                 return
 
@@ -1028,7 +1028,7 @@ class CrossPatchWindow(QMainWindow):
             # This will handle enabling all mods, including showing the batch processor dialog.
             enabled_mods_dict = self.profile_manager.get_active_profile().get("enabled_mods", {})
             Util.enable_mods_from_priority(new_priority_list, enabled_mods_dict, self.cfg, self, self.profile_manager.get_active_profile())
-            
+
             # Refresh the treeview one last time in case the conflict dialog caused changes.
             self._update_treeview(preserve_selection=False)
 
@@ -1066,11 +1066,11 @@ class CrossPatchWindow(QMainWindow):
             if not item_data.get('_aFiles'):
                 QMessageBox.information(self, "No Files Found", "Could not find any downloadable files for this mod.")
                 return
-            
+
             # Pause background image loading while the modal dialog is open to prevent crashes.
             QThreadPool.globalInstance().clear() # Stop queued tasks
             QThreadPool.globalInstance().waitForDone(100) # Wait up to 100ms for active tasks
-            
+
             try:
                 dialog = FileSelectDialog(self, item_data)
                 if dialog.exec():
@@ -1132,7 +1132,7 @@ class CrossPatchWindow(QMainWindow):
 
         folder_name = selected.data(0, Qt.UserRole)
         mod_path = os.path.join(self.cfg["mods_folder"], folder_name)
-        
+
         # Discover the configuration from the file system
         config_data = Util.discover_mod_configuration(mod_path)
         if not config_data:
@@ -1486,7 +1486,7 @@ class CrossPatchWindow(QMainWindow):
         self.browse_current_page = page
         self.browse_page_label.setText(f"Page {self.browse_current_page}")
         self.browse_prev_btn.setEnabled(page > 1)
-        
+
         search_query = self.browse_search_entry.text().strip()
         sort_param = "Featured" # Hardcoded to always use Featured
 
@@ -1545,7 +1545,7 @@ class CrossPatchWindow(QMainWindow):
 
         print(f"[DEBUG] Populating browse tree with {len(mods)} mods.")
         self.browse_mods_data = mods
-        
+
         # Determine number of columns based on window width
         cols = max(1, self.scroll_area.width() // 230)
         for i, mod_data in enumerate(mods):

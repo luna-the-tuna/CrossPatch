@@ -6,12 +6,12 @@ import ctypes
 import re
 if platform.system() == "Windows": import winreg
 from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox
- 
+
 def is_packaged():
     """Checks if the application is running as a packaged executable."""
     return getattr(sys, 'frozen', False) or "__compiled__" in globals()
- 
- 
+
+
 def get_config_dir():
     """
     Determines the appropriate directory for configuration files.
@@ -36,10 +36,10 @@ def default_mods_folder():
         path = os.path.join(os.getcwd(), "mods")
         os.makedirs(path, exist_ok=True)
         return path
-    
+
     # Ensure a QApplication instance exists
     app = QApplication.instance() or QApplication(sys.argv)
-    
+
     QMessageBox.information(None, "Welcome to CrossPatch!", "Please select a folder to store your mods.\nNote: this is NOT your game's ~mods folder.")
     folder = QFileDialog.getExistingDirectory(
         None,
@@ -129,7 +129,7 @@ def _find_game_in_steam_libraries(steam_path, app_id="2486820"):
     """Parses Steam's library file to find the game in any library folder."""
     library_folders_vdf = os.path.join(steam_path, "steamapps", "libraryfolders.vdf")
     app_manifest_file = f"appmanifest_{app_id}.acf"
-    
+
     # List of all potential library paths, starting with the main one
     library_paths = [steam_path]
 
@@ -160,7 +160,7 @@ def _find_game_in_steam_libraries(steam_path, app_id="2486820"):
                             return game_path
             except Exception as e:
                 print(f"Error reading manifest file {manifest_path}: {e}")
-    
+
     print("Game not found in any Steam library.")
     return "" # Return empty if not found
 
@@ -220,8 +220,6 @@ def save_config(cfg):
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(cfg, f, indent=2)
 
-config = load_config()
-
 def register_url_protocol():
     """
     Registers the crosspatch:// URL protocol in the Windows Registry.
@@ -241,7 +239,7 @@ def register_url_protocol():
 
         # Registry path
         key_path = r"Software\Classes\crosspatch"
-        
+
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
             winreg.SetValue(key, None, winreg.REG_SZ, "URL:CrossPatch Protocol")
             winreg.SetValueEx(key, "URL Protocol", 0, winreg.REG_SZ, "")
